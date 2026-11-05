@@ -121,7 +121,9 @@ public partial class CameraRenderer
         DrawingSettings drawingSettings = new DrawingSettings(unlitShaderTagId, sortingSettings)
         {
             enableDynamicBatching = useDynamicBatching,
-            enableInstancing = useGPUInstancing
+            enableInstancing = useGPUInstancing,
+            perObjectData = PerObjectData.Lightmaps|PerObjectData.LightProbe|
+                            PerObjectData.LightProbeProxyVolume
         };
         
         //set the second shader pass in this DrawSetting

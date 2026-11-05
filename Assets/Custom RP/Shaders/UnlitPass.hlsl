@@ -1,18 +1,7 @@
 #ifndef CUSTOM_UNLITPASS
 #define CUSTOM_UNLITPASS
 
-#include "../ShaderLibrary/Common.hlsl"
 
-
-
-TEXTURE2D(_BaseMap);
-SAMPLER(sampler_BaseMap);
-
-UNITY_INSTANCING_BUFFER_START(UnityPerMaterial)
-    UNITY_DEFINE_INSTANCED_PROP(float4,_BaseMap_ST)
-    UNITY_DEFINE_INSTANCED_PROP(float4,_BaseColor)
-    UNITY_DEFINE_INSTANCED_PROP(float,_Cutoff)
-UNITY_INSTANCING_BUFFER_END(UnityPerMaterial)
 
 
 struct Attributes
@@ -43,8 +32,8 @@ Varyings UnlitPassVertex(Attributes input){
     
     output.positionCS = positionCS;
     
-    float4 uvST = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial,_BaseMap_ST);
-    float2 uv = input.uv*uvST.xy + uvST.zw; 
+     
+    float2 uv = TransformBaseUV(input.uv);
     
     output.uv = uv;
     
@@ -56,14 +45,11 @@ half4 UnlitPassFragment(Varyings input):SV_TARGET{
     UNITY_SETUP_INSTANCE_ID(input);
     
     
-    float4 color =  UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial,_BaseColor);
-    float4 baseMap = SAMPLE_TEXTURE2D(_BaseMap,sampler_BaseMap,input.uv);
-    
-    float4 base = baseMap*color;
-    
+    float4 base =  GetBaseColor(input.uv);
+
     
     #ifdef _CLIPPING
-    clip(base.a-UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial,_Cutoff));
+    clip(base.a-GetCutoff(input.uv));
     #endif
     return base;
 

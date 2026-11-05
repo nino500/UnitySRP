@@ -1,8 +1,8 @@
-Shader "Custom/DrawCall"
+Shader "Custom/Unlit"
 {
     Properties
     {
-        _BaseColor("Base Color",Color) = (1.0,1.0,0.0,1.0)
+        [HDR]_BaseColor("Base Color",Color) = (1.0,1.0,0.0,1.0)
         _BaseMap("Texture",2D) = "white"{}
         _Cutoff("Alpha Cutoff",Float) = 0.3
         [Toggle(_CLIPPING)] _Clipping("Alpha Clipping",Float) = 0
@@ -27,6 +27,13 @@ Shader "Custom/DrawCall"
             
         }
 
+        HLSLINCLUDE
+        // common UnityInput and function
+        #include "../ShaderLibrary/Common.hlsl"
+        //custom LitInput 
+        #include "../Shaders/UnlitInput.hlsl"
+        
+        ENDHLSL
         Pass
         {
             
@@ -67,7 +74,22 @@ Shader "Custom/DrawCall"
             
             ENDHLSL
         }
+        
 
+
+        Pass
+        {
+            Tags {"LightMode" = "MetaPass"}
+            
+            HLSLPROGRAM
+            
+            #pragma target 3.5
+            #pragma vertex MetaPassVertex
+            #pragma fragment MetaPassFragment
+
+            #include "../Shaders/MetaPass.hlsl"
+            ENDHLSL
+        }
 
     }
 

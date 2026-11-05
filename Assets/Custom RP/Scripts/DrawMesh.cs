@@ -2,7 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-
+using UnityEngine.Rendering;
 
 
 public class DrawMesh : MonoBehaviour
@@ -15,10 +15,16 @@ public class DrawMesh : MonoBehaviour
     [SerializeField]private Mesh mesh;
     [SerializeField] private Material material;
 
+    [SerializeField] private LightProbeProxyVolume lPPV;
+    
     Matrix4x4[] matrices = new Matrix4x4[1023];
+    
+    Vector3[] positionWS = new Vector3[1023];
+    
     Vector4[] colors = new Vector4[1023];
     float[] metallics = new float[1023];
     float[] smoothnesses = new float[1023];
+    
     
 
     private MaterialPropertyBlock block;
@@ -29,12 +35,19 @@ public class DrawMesh : MonoBehaviour
         for (int i = 0; i < matrices.Length; i++)
         {
             matrices[i] = Matrix4x4.TRS(UnityEngine.Random.insideUnitSphere*10f,Quaternion.identity,Vector3.one);
+
+         
+            positionWS[i] = matrices[i].GetColumn(3);
+            
             
             colors[i] = new Vector4(UnityEngine.Random.value, UnityEngine.Random.value, UnityEngine.Random.value, UnityEngine.Random.value);
             
             metallics[i] = UnityEngine.Random.value<0.25f?1f:0f;
             smoothnesses[i] = UnityEngine.Random.Range(0.05f, 0.95f);
         }   
+        
+        
+        
     }
 
 
@@ -47,8 +60,29 @@ public class DrawMesh : MonoBehaviour
             block.SetFloatArray(metallicID, metallics);
             block.SetFloatArray(smoothnessID, smoothnesses);
         }
+
+
+        if (!lPPV)
+        {
+            var lightProbe = new SphericalHarmonicsL2[1023];
         
-        Graphics.DrawMeshInstanced(mesh, 0, material, matrices,1023,block);
+            LightProbes.CalculateInterpolatedLightAndOcclusionProbes(
+                positionWS,lightProbe,null);
+        
+            block.CopySHCoefficientArraysFrom(lightProbe);
+
+        }
+        else
+        {
+            Debug.Log("using LPPV");
+        }
+      
+        
+        Graphics.DrawMeshInstanced(mesh, 0, material, matrices,1023,block,
+            ShadowCastingMode.On,true,0,null,
+            lPPV ?LightProbeUsage.UseProxyVolume:LightProbeUsage.CustomProvided,
+            lPPV
+            );
         
     }
   

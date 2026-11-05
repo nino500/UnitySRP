@@ -1,8 +1,5 @@
-#ifndef CUSTOM_LITPASS
-#define CUSTOM_LITPASS
-
-// common variable and function
-#include "../ShaderLibrary/Common.hlsl"
+#ifndef CUSTOM_LIT_PASS
+#define CUSTOM_LIT_PASS
 
 
 // custom surface struct
@@ -16,27 +13,39 @@
 #include "../ShaderLibrary/Light.hlsl"
 
 
-
+//GI 
+#include "../ShaderLibrary/GI.hlsl"
 
 // custom lighting results getter 
 #include "../ShaderLibrary/Lighting.hlsl"
 
 
 
-TEXTURE2D(_BaseMap);
-SAMPLER(sampler_BaseMap);
+//GI Macro
 
-//没有在drawmeshinstanced 的block参数配置覆盖的属性，会使用材质面板的数据
-UNITY_INSTANCING_BUFFER_START(UnityPerMaterial)
-    
-    UNITY_DEFINE_INSTANCED_PROP(float4,_BaseMap_ST)
-    UNITY_DEFINE_INSTANCED_PROP(float4,_BaseColor)
-    UNITY_DEFINE_INSTANCED_PROP(float,_Cutoff)
+#if defined(LIGHTMAP_ON)
+    #define GI_ATTRIBUTE_DATA  float2 lightMapUV : TEXCOORD1;
+    #define GI_VARYINGS_DATA    float2 lightMapUV:VAR_LIGHT_MAP_UV;
+    #define TRANSFER_GI_DATA(input, output) \    
+            output.lightMapUV = input.lightMapUV * \
+            unity_LightmapST.xy + unity_LightmapST.zw;
+            
 
-    UNITY_DEFINE_INSTANCED_PROP(float,_Metallic)
-    UNITY_DEFINE_INSTANCED_PROP(float,_Smoothness)
 
-UNITY_INSTANCING_BUFFER_END(UnityPerMaterial)
+
+
+    #define GI_FRAGMENT_DATA(input)  input.lightMapUV
+
+#else
+
+    #define GI_ATTRIBUTE_DATA
+    #define GI_VARYINGS_DATA
+    #define TRANSFER_GI_DATA(input, output)
+    #define GI_FRAGMENT_DATA(input) 0.0
+
+#endif
+
+
 
 
 struct Attributes
@@ -46,6 +55,7 @@ struct Attributes
     float2 uv: TEXCOORD0;
     float3 normalOS:NORMAL;
     
+    GI_ATTRIBUTE_DATA
     UNITY_VERTEX_INPUT_INSTANCE_ID
 };
 
@@ -56,6 +66,8 @@ struct Varyings
     float3 positionWS:VAR_POSITION;
     float2 uv:VAR_TEXCOORD;
     float3 normalWS:VAR_NORMAL;
+    
+    GI_VARYINGS_DATA
     UNITY_VERTEX_INPUT_INSTANCE_ID
 };
 
@@ -67,14 +79,15 @@ Varyings LitPassVertex(Attributes input){
     //Extracts the index from the input and stores it in a global static variable that other instancing macro rely on 
     UNITY_SETUP_INSTANCE_ID(input);    
     UNITY_TRANSFER_INSTANCE_ID(input,output);
+    
+    TRANSFER_GI_DATA(input, output)
     float3 positionWS = TransformObjectToWorld(input.positionOS);
     float4 positionCS = TransformWorldToHClip(positionWS);
     
     output.positionWS = positionWS;
     output.positionCS = positionCS;
     
-    float4 uvST = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial,_BaseMap_ST);
-    float2 uv = input.uv*uvST.xy + uvST.zw; 
+    float2 uv = TransformBaseUV(input.uv);
     
     output.normalWS = TransformObjectToWorldNormal(input.normalOS);
     output.uv = uv;
@@ -87,10 +100,7 @@ half4 LitPassFragment(Varyings input):SV_TARGET{
     UNITY_SETUP_INSTANCE_ID(input);
     
     
-    float4 baseColor =  UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial,_BaseColor);
-    float4 baseMap = SAMPLE_TEXTURE2D(_BaseMap,sampler_BaseMap,input.uv);
-    
-    float4 base = baseMap*baseColor;
+    float4 base =  GetBaseColor(input.uv);
     
     Surface surface;
     
@@ -104,24 +114,25 @@ half4 LitPassFragment(Varyings input):SV_TARGET{
     
     surface.color = base.rgb;
     surface.alpha = base.a;
-    surface.metallic = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial,_Metallic);
-    surface.smoothness = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial,_Smoothness);
+    surface.metallic = GetMetallic(input.uv);
+    surface.smoothness = GetSmoothness(input.uv);
     
     surface.dither = InterleavedGradientNoise(input.positionCS.xy,0);
     
-    #if defined(_PREMULTPLY_ALPHA)
+    #if defined(_PREMULTIPLY_ALPHA)
     BRDF brdf = GetBRDF(surface,true);
     #else
         BRDF brdf = GetBRDF(surface,false);
     #endif
     
-    //intput :surface and light input
+    //input :Surface ,LightModel input,GI param(lightmap)
     //output : final color
-    float3 color = GetLighting(surface,brdf);
-    
+    GI gi = GetGI(GI_FRAGMENT_DATA(input),surface);
+    float3 color = GetLighting(surface,brdf,gi);
+    color += GetEmission(input.uv);
     
     #ifdef _CLIPPING
-    clip(surface.alpha-UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial,_Cutoff));
+    clip(surface.alpha-GetCutoff(input.uv));
     #endif
     
     return float4(color,surface.alpha);

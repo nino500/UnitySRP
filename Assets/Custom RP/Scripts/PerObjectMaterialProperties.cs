@@ -14,9 +14,11 @@ public class PerObjectMaterialProperties : MonoBehaviour
     private static int baseColorID = Shader.PropertyToID("_BaseColor"),
         cutoffID = Shader.PropertyToID("_Cutoff"),
         metallicId = Shader.PropertyToID("_Metallic"),
-        smoothnessId = Shader.PropertyToID("_Smoothness");
+        smoothnessId = Shader.PropertyToID("_Smoothness"),
     
-    
+        emissionColorId = Shader.PropertyToID("_EmissionColor");
+        [SerializeField,ColorUsage(false,true)]
+        Color emissionColor = Color.black;
     
     
     static MaterialPropertyBlock propertyBlock;
@@ -41,6 +43,7 @@ public class PerObjectMaterialProperties : MonoBehaviour
         propertyBlock.SetFloat(metallicId,metallic);
         propertyBlock.SetFloat(smoothnessId,smoothness );
         
+        propertyBlock.SetColor(emissionColorId, emissionColor);
         //override the  material's parameter correspond to baseColorID
         GetComponent<Renderer>().SetPropertyBlock(propertyBlock);
         
