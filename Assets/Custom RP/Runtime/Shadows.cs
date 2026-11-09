@@ -74,11 +74,23 @@ public class Shadows
 
    
    
+   //Shadow Mask keywords
+   private static string[] shadowMaskKeywords =
+   {
+      "_SHADOW_MASK_ALWAYS",
+      "_SHADOW_MASK_DISTANCE"
+      
+   };
+
+   private bool useShadowMask;
+   
    
    int shadowedDirectionalLightCount;
    public void Setup(ScriptableRenderContext context, CullingResults cullingResults,ShadowSetting shadowSetting)
    {
-      
+
+
+      useShadowMask = false;
       this.context = context;
       this.cullingResults = cullingResults;
       this.shadowSetting = shadowSetting;
@@ -90,13 +102,30 @@ public class Shadows
 
 
    //compute and store the valid  index  in the buffer that will be uploaded to GPU later
-   public Vector3 ReserveDirectionalShadows(Light light,int visibleLightIndex)
+   public Vector4 ReserveDirectionalShadows(Light light,int visibleLightIndex)
    {
       if (shadowedDirectionalLightCount < maxShadowedDirectionalLightCount
           && light.shadows != LightShadows.None 
           && light.shadowStrength > 0f
-          && cullingResults.GetShadowCasterBounds(visibleLightIndex,out Bounds bounds))
+           )
       {
+
+         
+         LightBakingOutput lightBaking = light.bakingOutput;
+
+         float maskChannel = -1;
+         if (lightBaking.mixedLightingMode == MixedLightingMode.Shadowmask &&
+             lightBaking.lightmapBakeType == LightmapBakeType.Mixed)
+         {
+            useShadowMask = true;
+            maskChannel = lightBaking.occlusionMaskChannel;
+         }
+         
+         if (!cullingResults.GetShadowCasterBounds(visibleLightIndex, out Bounds bounds))
+         {
+            return new Vector4(-light.shadowStrength,0f,0f,maskChannel);
+
+         }
          shadowedDirectionalLights[shadowedDirectionalLightCount] = new 
             ShadowedDirectionalLight()
             {
@@ -105,16 +134,19 @@ public class Shadows
                nearPlaneOffset = light.shadowNearPlane
             };
 
-         return new Vector3(light.shadowStrength, shadowedDirectionalLightCount++*
-                                                  shadowSetting.directional.cascadeCount,light.shadowNormalBias);
-
+         
+         return new Vector4(light.shadowStrength, shadowedDirectionalLightCount++*
+                                                  shadowSetting.directional.cascadeCount,light.shadowNormalBias , 
+            maskChannel);
+        
       }
       
-      return  Vector3.zero;
+      return  new Vector4(0f,0f,0f,-1f);
    }
    
    public void Render()
    {
+      //realtime shadow
       if (shadowedDirectionalLightCount > 0)
       {
          RenderDirectionalShadows();
@@ -125,6 +157,17 @@ public class Shadows
          buffer.GetTemporaryRT(dirShadowAtlasId,1,1,32,
             FilterMode.Bilinear,RenderTextureFormat.Shadowmap);
       }
+      
+      //baked shadow
+      buffer.BeginSample(bufferName);
+      
+      SetKeyWords(shadowMaskKeywords,useShadowMask?QualitySettings.shadowmaskMode==ShadowmaskMode.Shadowmask?0:1:-1);
+      
+      buffer.EndSample(bufferName);
+      ExecuteBuffer();
+      
+      
+      
    }
 
 
@@ -165,7 +208,7 @@ public class Shadows
       float f = 1f - shadowSetting.directional.cascadeFade;
       buffer.SetGlobalVector(shadowDistanceFadeId, 
          new Vector4(1f/shadowSetting.maxDistance,1f/shadowSetting.distanceFade,
-            1f/1f-f*f
+            1f/(1f-f*f)
          ));
       
       buffer.SetGlobalVectorArray(cascadeCullingSpheresId,cascadeCullingSpheres);

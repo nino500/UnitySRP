@@ -65,11 +65,14 @@ public class DrawMesh : MonoBehaviour
         if (!lPPV)
         {
             var lightProbe = new SphericalHarmonicsL2[1023];
-        
+            //var occlusionProbe = new Vector4[1023];
+            
             LightProbes.CalculateInterpolatedLightAndOcclusionProbes(
                 positionWS,lightProbe,null);
         
+            
             block.CopySHCoefficientArraysFrom(lightProbe);
+            //block.CopyProbeOcclusionArrayFrom(occlusionProbe);
 
         }
         else

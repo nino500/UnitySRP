@@ -34,9 +34,13 @@ int GetDirectionalLightCount()
 DirectionalShadowData GetDirectionalShadowData(int index,ShadowData shadowData)
 {
     DirectionalShadowData data;
-    data.shadowStrength = _DirectionalLightShadowData[index].x*shadowData.strength;
+    data.shadowStrength = _DirectionalLightShadowData[index].x;//*shadowData.strength;
     data.tileIndex = _DirectionalLightShadowData[index].y + shadowData.cascadeIndex;
     data.normalBias = _DirectionalLightShadowData[index].z;
+    
+    data.shadowMaskChannel =  _DirectionalLightShadowData[index].w;
+    
+    
     return data;
 
 }

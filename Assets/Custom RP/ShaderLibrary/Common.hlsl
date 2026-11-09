@@ -26,7 +26,9 @@
 
 
 
-
+#if defined(_SHADOW_MASK_DISTANCE)||defined(_SHADOW_MASK_ALWAYS)
+    #define SHADOWS_SHADOWMASK
+#endif
 
 //引入GPUInstancing,更改上述矩阵宏定义，切换宏对应的数据来源，让每个instance自己的矩阵定义上文矩阵宏
 #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/UnityInstancing.hlsl"

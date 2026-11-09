@@ -123,7 +123,9 @@ public partial class CameraRenderer
             enableDynamicBatching = useDynamicBatching,
             enableInstancing = useGPUInstancing,
             perObjectData = PerObjectData.Lightmaps|PerObjectData.LightProbe|
-                            PerObjectData.LightProbeProxyVolume
+                            PerObjectData.LightProbeProxyVolume|
+                            PerObjectData.ShadowMask|
+                            PerObjectData.OcclusionProbe
         };
         
         //set the second shader pass in this DrawSetting
