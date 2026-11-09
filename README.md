@@ -18,5 +18,7 @@ a Unity simple SRP following the  Catlike Coding Custom SRP tutorials.
 - PCF Filtering option
 - Smooth Transition
 
+- Baked directional shadows support for multiple lights
+
 ## Editor
 - Material Property Presets 
