@@ -4,6 +4,10 @@ a Unity simple SRP following the  Catlike Coding Custom SRP tutorials.
 
 # Implemented Features
 
+
+## LOD
+- Clip-based Fade LOD support 
+
 ## Lighting and Materials
 - Custom render pipeline and camera rendering
 - Multiple directional light

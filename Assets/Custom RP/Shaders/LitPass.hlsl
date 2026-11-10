@@ -95,9 +95,26 @@ Varyings LitPassVertex(Attributes input){
     return output;
 }
 
+
+
+void ClipLOD(float fade,float2 positionCS)
+{
+    
+    #if defined(LOD_FADE_CROSSFADE)
+    float dither = InterleavedGradientNoise(positionCS.xy,0);
+    clip(fade +(fade<0?dither:-dither));
+    #endif
+}
+
+
+
+
+
 half4 LitPassFragment(Varyings input):SV_TARGET{
     //use the same macro as before to make the instanceID available
     UNITY_SETUP_INSTANCE_ID(input);
+        
+    ClipLOD(unity_LODFade.x,input.positionCS.xy);
     
     
     float4 base =  GetBaseColor(input.uv);
@@ -134,6 +151,8 @@ half4 LitPassFragment(Varyings input):SV_TARGET{
     #ifdef _CLIPPING
     clip(surface.alpha-GetCutoff(input.uv));
     #endif
+    
+
     
     return float4(color,surface.alpha);
 
