@@ -11,8 +11,8 @@ a Unity simple SRP following the  Catlike Coding Custom SRP tutorials.
 ## Lighting and Materials
 - Custom render pipeline and camera rendering
 - Multiple directional light
-- Simple BRDF lighting model
-- Baked lighting support(lightmap,light probe,LPPV)
+- BRDF lighting model (metallic-flow)
+- Baked lighting support(lightmap,light probe,LPPV,reflection probe)
 
 ## shadow
 

@@ -4,6 +4,7 @@
 
 
 #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/EntityLighting.hlsl"
+#include "Packages/com.unity.render-pipelines.core/ShaderLibrary/ImageBasedLighting.hlsl"
 
 //Lightmap-light
 TEXTURE2D(unity_Lightmap);
@@ -17,6 +18,13 @@ SAMPLER(samplerunity_ShadowMask);
 //3d texture storing the light probe volume data 
 TEXTURE3D_FLOAT(unity_ProbeVolumeSH);
 SAMPLER(samplerunity_ProbeVolumeSH);
+
+
+
+//sample cubemap for specular light input
+TEXTURECUBE(unity_SpecCube0);
+SAMPLER(samplerunity_SpecCube0);
+
 
 float3 SampleLightMap(float2 LightMapUV)
 {
@@ -99,16 +107,30 @@ float4 SampleBakedShadows(float2 LightMapUV, Surface surfaceWS)
 
 
 
+float3 SampleEnvironment(Surface surfaceWS,BRDF brdf)
+{
+    float3 uvw = reflect(-surfaceWS.viewDirection,surfaceWS.normal);
+    float mipLevel = PerceptualRoughnessToMipmapLevel(brdf.perceptualRoughness);
+    
+    
+    float4 environment = SAMPLE_TEXTURE3D_LOD(unity_SpecCube0,samplerunity_SpecCube0,uvw,mipLevel);
+    
+    
+    return DecodeHDREnvironment(environment,unity_SpecCube0_HDR);
+}
+
+
+
 
 
 struct GI
 {
     float3 diffuse;
-    
+    float3 specular;
     ShadowMask shadowMask;
 };
 
-GI GetGI(float2 lightMapUV,Surface surfaceWS)
+GI GetGI(float2 lightMapUV,Surface surfaceWS,BRDF brdf)
 {   
     GI gi;
     gi.shadowMask.distance = false;
@@ -116,7 +138,7 @@ GI GetGI(float2 lightMapUV,Surface surfaceWS)
     gi.shadowMask.shadows = 1.0;
     
     gi.diffuse = SampleLightMap(lightMapUV) + SampleLightProbe(surfaceWS);
-    
+    gi.specular = SampleEnvironment(surfaceWS,brdf);
     
     #if defined(_SHADOW_MASK_ALWAYS)
     gi.shadowMask.always = true;

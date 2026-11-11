@@ -36,6 +36,8 @@ float4 unity_ProbeVolumeMin;
 //Occlusion Probe
 float4 unity_ProbesOcclusion;
 
+//HDR parameter for Reflection Probe
+float4 unity_SpecCube0_HDR;
 
 CBUFFER_END
 

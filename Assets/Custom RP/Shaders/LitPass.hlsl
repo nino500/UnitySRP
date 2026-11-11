@@ -13,6 +13,7 @@
 #include "../ShaderLibrary/Light.hlsl"
 
 
+#include "../ShaderLibrary/BRDF.hlsl"
 //GI 
 #include "../ShaderLibrary/GI.hlsl"
 
@@ -133,6 +134,7 @@ half4 LitPassFragment(Varyings input):SV_TARGET{
     surface.alpha = base.a;
     surface.metallic = GetMetallic(input.uv);
     surface.smoothness = GetSmoothness(input.uv);
+    surface.fresnelStrength = GetFresnelStrength(input.uv);
     
     surface.dither = InterleavedGradientNoise(input.positionCS.xy,0);
     
@@ -144,7 +146,7 @@ half4 LitPassFragment(Varyings input):SV_TARGET{
     
     //input :Surface ,LightModel input,GI param(lightmap)
     //output : final color
-    GI gi = GetGI(GI_FRAGMENT_DATA(input),surface);
+    GI gi = GetGI(GI_FRAGMENT_DATA(input),surface,brdf);
     float3 color = GetLighting(surface,brdf,gi);
     color += GetEmission(input.uv);
     

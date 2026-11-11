@@ -27,10 +27,11 @@ float3 GetLighting(Surface surfaceWS,BRDF brdf,Light light)
 //the entry function for outside
 float3 GetLighting(Surface surfaceWS,BRDF brdf,GI gi)
 {
-    float3 color = gi.diffuse*brdf.diffuse;
-    
     ShadowData shadowData = GetShadowData(surfaceWS);
     shadowData.shadowMask = gi.shadowMask;
+    
+    
+    float3 color = IndirectBRDF(surfaceWS,brdf,gi.diffuse,gi.specular);
     
     //per light source compute
     for (int i =0;i<GetDirectionalLightCount();i++)

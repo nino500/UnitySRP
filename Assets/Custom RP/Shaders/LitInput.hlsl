@@ -18,6 +18,9 @@ UNITY_INSTANCING_BUFFER_START(UnityPerMaterial)
 
 
     UNITY_DEFINE_INSTANCED_PROP(float4,_EmissionColor)
+
+
+    UNITY_DEFINE_INSTANCED_PROP(float,_FresnelStrength)
 UNITY_INSTANCING_BUFFER_END(UnityPerMaterial)
 
 float2 TransformBaseUV(float2 baseUV)
@@ -57,6 +60,12 @@ float GetSmoothness(float2 baseUV)
 float GetCutoff(float2 baseUV)
 {
     return UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial,_Cutoff);
+}
+
+
+float GetFresnelStrength(float2 baseUV)
+{
+    return UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial,_FresnelStrength);
 }
 
 #endif

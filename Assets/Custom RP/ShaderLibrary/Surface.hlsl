@@ -10,6 +10,7 @@ struct Surface
     float3 color;
     float metallic;
     float smoothness;
+    float fresnelStrength;
     float alpha;
     
     
